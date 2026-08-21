@@ -123,6 +123,29 @@ body {
 .cart-item-info p { color: var(--accent-color); font-weight: 600; }
 .remove-btn { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 14px; }
 
+/* Formulário de dados de entrega (dentro do carrinho) */
+.checkout-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.form-group { flex-direction: column; align-items: flex-start; gap: 6px; }
+.form-group label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+.form-group input {
+    width: 100%; padding: 10px 12px; background-color: var(--bg-surface);
+    color: var(--text-primary); border: 1px solid var(--border-color);
+    border-radius: 6px; font-size: 14px;
+}
+.form-group input:focus { outline: none; border-color: var(--accent-color); }
+
+/* Exibição do QR Code PIX após gerar a cobrança */
+.pix-container { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 8px 0; }
+.pix-container h4 { font-size: 16px; }
+.pix-qrcode { width: 200px; height: 200px; border: 1px solid var(--border-color); border-radius: 8px; }
+.pix-total { font-size: 20px; font-weight: 700; color: var(--accent-color); }
+.pix-copia-cola {
+    width: 100%; min-height: 70px; resize: none; padding: 10px;
+    background-color: var(--bg-surface); color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px;
+}
+.pix-aviso { font-size: 13px; color: var(--text-secondary); }
+
 .cart-footer { padding: 24px; border-top: 1px solid var(--border-color); }
 .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 .checkout-btn { width: 100%; padding: 16px; background-color: var(--accent-color); color: var(--accent-text); border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }

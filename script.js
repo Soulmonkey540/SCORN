@@ -54,33 +54,27 @@ menuItems.forEach(item => {
     });
 });
 
-// --- DADOS (PREPARADO PARA VERCEL) ---
+// --- DADOS (VERCEL) ---
 const API_URL_PRODUTOS = '/api/produtos'; 
 const API_URL_CHECKOUT = '/api/checkout';
-
-// Adicionei flags 'destaque' e 'novidade' para as outras páginas
-const mockDatabase = [
-    { id: 1, nome: 'Camiseta Básica SCORN', tipo: 'camiseta', preco: 79.90, tamanhos: ['P', 'M', 'G'], destaque: true, novidade: false, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Camiseta' },
-    { id: 2, nome: 'Camiseta Oversized Logo', tipo: 'camiseta', preco: 119.90, tamanhos: ['M', 'G', 'GG'], destaque: true, novidade: true, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Oversized' },
-    { id: 3, nome: 'Calça Cargo Dark', tipo: 'calca', preco: 259.90, tamanhos: ['M', 'G'], destaque: false, novidade: true, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Cargo' },
-    { id: 4, nome: 'Calça Jeans Reta', tipo: 'calca', preco: 199.90, tamanhos: ['P', 'M', 'G', 'GG'], destaque: true, novidade: false, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Jeans' },
-    { id: 5, nome: 'Jaqueta Puffer SCORN', tipo: 'casaco', preco: 389.90, tamanhos: ['G', 'GG'], destaque: false, novidade: true, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Puffer' },
-    { id: 6, nome: 'Moletom Essential', tipo: 'casaco', preco: 219.90, tamanhos: ['P', 'M', 'G'], destaque: false, novidade: false, img: 'https://via.placeholder.com/240x260/cccccc/000000?text=Moletom' }
-];
 
 const state = { produtos: [], carrinho: [] };
 
 async function fetchProdutos() {
     try {
-        // No Vercel: const response = await fetch(API_URL_PRODUTOS); const data = await response.json();
-        const data = await new Promise(resolve => setTimeout(() => resolve(mockDatabase), 200));
-        state.produtos = data;
+        const response = await fetch(API_URL_PRODUTOS);
+        if (!response.ok) throw new Error('Falha ao buscar produtos');
+        const data = await response.json();
+
+        // O banco guarda preço como string numérica (NUMERIC) — garante que vira Number
+        state.produtos = data.map(p => ({ ...p, preco: Number(p.preco) }));
         
         aplicarFiltros(); // Renderiza catálogo principal
-        renderizarSecaoCustomizada(data.filter(p => p.destaque), 'destaques-container');
-        renderizarSecaoCustomizada(data.filter(p => p.novidade), 'novidades-container');
+        renderizarSecaoCustomizada(state.produtos.filter(p => p.destaque), 'destaques-container');
+        renderizarSecaoCustomizada(state.produtos.filter(p => p.novidade), 'novidades-container');
     } catch (error) {
         console.error("Erro:", error);
+        document.getElementById('catalog-container').innerHTML = '<p>Não foi possível carregar os produtos no momento.</p>';
     }
 }
 
@@ -162,7 +156,7 @@ function renderizarCarrinho() {
     }
 
     let total = 0;
-    container.innerHTML = state.carrinho.map(item => {
+    const itensHtml = state.carrinho.map(item => {
         total += item.preco;
         const preco = item.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         return `
@@ -176,6 +170,25 @@ function renderizarCarrinho() {
         `;
     }).join('');
 
+    // Formulário de dados de entrega — usa os valores já digitados anteriormente, se existirem
+    const dadosFormHtml = `
+        <div class="checkout-form">
+            <div class="filter-group form-group">
+                <label for="input-nome">Nome:</label>
+                <input type="text" id="input-nome" placeholder="Seu nome completo" value="${state.dadosCliente?.nome || ''}">
+            </div>
+            <div class="filter-group form-group">
+                <label for="input-telefone">Telefone (WhatsApp):</label>
+                <input type="tel" id="input-telefone" placeholder="(38) 99999-9999" value="${state.dadosCliente?.telefone || ''}">
+            </div>
+            <div class="filter-group form-group">
+                <label for="input-endereco">Endereço de entrega:</label>
+                <input type="text" id="input-endereco" placeholder="Rua, número, bairro, cidade" value="${state.dadosCliente?.endereco || ''}">
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = itensHtml + dadosFormHtml;
     totalEl.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
@@ -183,41 +196,74 @@ function renderizarCarrinho() {
 document.getElementById('checkout-btn').addEventListener('click', async () => {
     if (state.carrinho.length === 0) return alert("Adicione itens ao carrinho!");
 
+    const nome = document.getElementById('input-nome')?.value.trim();
+    const telefone = document.getElementById('input-telefone')?.value.trim();
+    const endereco = document.getElementById('input-endereco')?.value.trim();
+
+    if (!nome || !telefone || !endereco) {
+        alert("Preencha nome, telefone e endereço de entrega para continuar.");
+        return;
+    }
+
+    // Guarda os dados preenchidos para o caso do carrinho ser reaberto
+    state.dadosCliente = { nome, telefone, endereco };
+
     const btn = document.getElementById('checkout-btn');
     btn.textContent = "Gerando PIX...";
     btn.disabled = true;
 
     try {
-        // O corpo da requisição que vai para a Serverless Function do Vercel
         const payload = {
-            itens: state.carrinho.map(item => item.id),
-            total: state.carrinho.reduce((acc, item) => acc + item.preco, 0)
+            itensIds: state.carrinho.map(item => item.id),
+            nomeCliente: nome,
+            telefoneCliente: telefone,
+            enderecoEntrega: endereco
         };
 
-        // Simulação do POST para o Vercel:
-        // const response = await fetch(API_URL_CHECKOUT, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(payload)
-        // });
-        // const dadosPagamento = await response.json();
-        
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simula delay da rede
+        const response = await fetch(API_URL_CHECKOUT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-        alert("Pedido registrado no Vercel (Status: Aguardando PIX).\nO QR Code seria exibido aqui.");
-        
-        // Limpa carrinho após sucesso
+        const dadosPagamento = await response.json();
+
+        if (!response.ok) {
+            throw new Error(dadosPagamento.error || 'Erro ao gerar cobrança PIX');
+        }
+
+        exibirQrCodePix(dadosPagamento);
+
+        // Limpa carrinho após gerar o PIX com sucesso (o pagamento em si é
+        // confirmado depois, pelo webhook, que baixa o estoque de fato)
         state.carrinho = [];
         document.getElementById('cart-count').textContent = '0';
-        closeOverlays();
 
     } catch (error) {
-        alert("Erro ao processar pedido.");
+        console.error(error);
+        alert(error.message || "Erro ao processar pedido.");
     } finally {
         btn.textContent = "Finalizar via PIX";
         btn.disabled = false;
     }
 });
+
+function exibirQrCodePix({ numeroPedido, total, qrCode, qrCodeBase64 }) {
+    const container = document.getElementById('cart-items');
+    const totalFormatado = Number(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    container.innerHTML = `
+        <div class="pix-container">
+            <h4>Pedido ${numeroPedido}</h4>
+            <p>Escaneie o QR Code abaixo ou use o código "copia e cola" para pagar via PIX.</p>
+            ${qrCodeBase64 ? `<img class="pix-qrcode" src="data:image/png;base64,${qrCodeBase64}" alt="QR Code PIX">` : ''}
+            <p class="pix-total">${totalFormatado}</p>
+            <textarea class="pix-copia-cola" readonly onclick="this.select()">${qrCode || ''}</textarea>
+            <p class="pix-aviso">Assim que o pagamento for confirmado, você receberá a atualização do pedido.</p>
+        </div>
+    `;
+    document.getElementById('cart-total-price').textContent = totalFormatado;
+}
 
 // Init
 document.getElementById('filter-type').addEventListener('change', aplicarFiltros);
