@@ -2,7 +2,7 @@
 // Rota pública usada pela loja (script.js). Continua igual ao original:
 // só mostra produtos com estoque disponível.
 
-const { sql } = require('@vercel/postgres');
+const { sql } = require('../lib/db');
 
 module.exports = async function handler(request, response) {
   try {

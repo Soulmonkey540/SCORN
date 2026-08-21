@@ -3,7 +3,7 @@
 // NO BANCO (nunca confia no preço vindo do navegador), cria o pedido
 // com status "aguardando_pix" e gera a cobrança PIX no Mercado Pago.
 
-const { sql } = require('@vercel/postgres');
+const { sql } = require('../lib/db');
 const { MercadoPagoConfig, Payment } = require('mercadopago');
 const { gerarNumeroPedido } = require('../lib/pedido');
 

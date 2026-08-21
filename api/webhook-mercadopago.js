@@ -12,7 +12,7 @@
 //        - marca o pedido como "pago" e "estoque_baixado = true"
 //        - envia a notificação via WhatsApp (CallMeBot)
 
-const { sql } = require('@vercel/postgres');
+const { sql } = require('../lib/db');
 const { MercadoPagoConfig, Payment } = require('mercadopago');
 const { enviarNotificacaoWhatsApp } = require('../lib/whatsapp');
 

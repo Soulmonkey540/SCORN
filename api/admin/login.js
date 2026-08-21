@@ -1,5 +1,5 @@
 // api/admin/login.js
-const { sql } = require('@vercel/postgres');
+const { sql } = require('../../lib/db');
 const bcrypt = require('bcryptjs');
 const { criarTokenSessao, cookieDeLogin } = require('../../lib/auth');
 

@@ -7,7 +7,7 @@
 //
 // Todas as rotas exigem sessão de admin válida (cookie).
 
-const { sql } = require('@vercel/postgres');
+const { sql } = require('../../lib/db');
 const { exigirSessaoAdmin } = require('../../lib/auth');
 
 module.exports = async function handler(request, response) {
